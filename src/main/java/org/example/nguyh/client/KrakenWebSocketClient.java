@@ -4,10 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.nguyh.domain.Candle;
 import org.example.nguyh.domain.OrderBook;
+import org.example.nguyh.kafka.producer.CandleDataProducer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.websocket.*;
 import java.net.URI;
 
+@Component
 @ClientEndpoint
 public class KrakenWebSocketClient {
 
@@ -15,6 +19,9 @@ public class KrakenWebSocketClient {
     private Candle currentCandle;
     private long nextMinuteTimestamp;
     private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Autowired
+    private CandleDataProducer kafkaProducer;
 
     // Getter for the orderBook field
     public OrderBook getOrderBook() {
@@ -24,7 +31,7 @@ public class KrakenWebSocketClient {
     // Initialize WebSocket
     public KrakenWebSocketClient() {
         this.currentCandle = new Candle(System.currentTimeMillis());
-        this.nextMinuteTimestamp = System.currentTimeMillis() + 60000; // 1-minute window
+        this.nextMinuteTimestamp = System.currentTimeMillis() + 60000; // 1 minute window
     }
 
     @OnOpen
@@ -50,9 +57,10 @@ public class KrakenWebSocketClient {
                 processBookData(bookData);
             }
 
-            // Log the candle every 1 minute and reset the candle for the next minute
+            // Log the candle every 1 minute, send to Kafka, and reset the candle for the next minute
             if (System.currentTimeMillis() >= nextMinuteTimestamp) {
-                currentCandle.logCandle();
+                kafkaProducer.sendCandle(currentCandle);  // Send candle data to Kafka
+
                 currentCandle = new Candle(nextMinuteTimestamp);
                 nextMinuteTimestamp += 60000; // Set timestamp for the next minute
             }
@@ -94,6 +102,18 @@ public class KrakenWebSocketClient {
     @OnError
     public void onError(Session session, Throwable throwable) {
         System.out.println("Error: " + throwable.getMessage());
+    }
+
+    public long getNextMinuteTimestamp() {
+        return nextMinuteTimestamp;
+    }
+
+    public void setNextMinuteTimestamp(long nextMinuteTimestamp) {
+        this.nextMinuteTimestamp = nextMinuteTimestamp;
+    }
+
+    public void setKafkaProducer(CandleDataProducer kafkaProducer) {
+        this.kafkaProducer = kafkaProducer;
     }
 
     public static void main(String[] args) {

@@ -1,44 +1,35 @@
 package org.example.nguyh.domain;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Candle {
-    private long timestamp;
     private double open;
     private double high;
     private double low;
     private double close;
     private int ticks;
 
-    private List<Double> midPrices = new ArrayList<>();
-
     public Candle(long timestamp) {
-        this.timestamp = timestamp;
+        this.ticks = 0; // Initialize the tick count
     }
 
-    public void addTick(double highestBid, double lowestAsk) {
-        double midPrice = (highestBid + lowestAsk) / 2;
-        if (midPrices.isEmpty()) {
-            open = midPrice;
-            high = midPrice;
-            low = midPrice;
+    // Adds a new tick to the candle and updates the prices accordingly
+    public void addTick(double price, double volume) {
+        if (ticks == 0) {
+            // First tick: set open, high, low, and close to the first price
+            this.open = price;
+            this.high = price;
+            this.low = price;
+            this.close = price;
         } else {
-            if (midPrice > high) high = midPrice;
-            if (midPrice < low) low = midPrice;
+            // Update high and low based on the new price
+            this.high = Math.max(this.high, price);
+            this.low = Math.min(this.low, price);
+            // Always set close to the last price
+            this.close = price;
         }
-        close = midPrice;
-        midPrices.add(midPrice);
-        ticks++;
+        this.ticks++;
     }
 
-    public void logCandle() {
-        System.out.println("Timestamp: " + timestamp);
-        System.out.println("Open: " + open + ", High: " + high + ", Low: " + low + ", Close: " + close);
-        System.out.println("Ticks: " + ticks);
-    }
-
-    // Getter methods for the test cases
+    // Getters for candle properties
     public double getOpen() {
         return open;
     }
