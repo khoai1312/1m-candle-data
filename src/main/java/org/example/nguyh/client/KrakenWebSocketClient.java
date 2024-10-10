@@ -23,15 +23,10 @@ public class KrakenWebSocketClient {
     @Autowired
     private CandleDataProducer kafkaProducer;
 
-    // Getter for the orderBook field
-    public OrderBook getOrderBook() {
-        return orderBook;
-    }
-
     // Initialize WebSocket
     public KrakenWebSocketClient() {
         this.currentCandle = new Candle(System.currentTimeMillis());
-        this.nextMinuteTimestamp = System.currentTimeMillis() + 60000; // 1 minute window
+        this.nextMinuteTimestamp = System.currentTimeMillis() + 60000; // 1-minute window
     }
 
     @OnOpen
@@ -92,6 +87,10 @@ public class KrakenWebSocketClient {
         if (!orderBook.isValid()) {
             System.out.println("Sanity check failed: highest bid >= lowest ask");
         }
+    }
+
+    public OrderBook getOrderBook() {
+        return orderBook;
     }
 
     @OnClose
