@@ -2,31 +2,39 @@ package org.example.nguyh.kafka.producer;
 
 import org.example.nguyh.domain.Candle;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class CandleDataProducer {
 
-    @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
-    private static final String TOPIC = "candle_data";
-    private ObjectMapper objectMapper = new ObjectMapper();
+    public CandleDataProducer(KafkaTemplate<String, String> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
+    /**
+     * Sends candle data to the "candle_data" Kafka topic.
+     *
+     * @param candle the candle object containing open, high, low, and close prices
+     */
     public void sendCandle(Candle candle) {
-        if (candle == null) {
-            System.out.println("Candle is null, no data sent to Kafka topic.");
-            return;  // Don't send a message if the candle is null
-        }
+        String candleData = serializeCandle(candle);
+        kafkaTemplate.send("candle_data", candleData);
+        System.out.println("Candle data sent to Kafka: " + candleData);
+    }
 
-        try {
-            String candleJson = objectMapper.writeValueAsString(candle);
-            kafkaTemplate.send(TOPIC, candleJson);
-            System.out.println("Candle data sent to Kafka topic: " + candleJson);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    /**
+     * Serializes the Candle object into a JSON string.
+     *
+     * @param candle the candle object
+     * @return the serialized JSON string
+     */
+    private String serializeCandle(Candle candle) {
+        return "{\"open\":" + candle.getOpen() +
+                ",\"high\":" + candle.getHigh() +
+                ",\"low\":" + candle.getLow() +
+                ",\"close\":" + candle.getClose() +
+                ",\"ticks\":" + candle.getTicks() + "}";
     }
 }
